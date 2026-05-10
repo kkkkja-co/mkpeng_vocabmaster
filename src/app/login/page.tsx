@@ -21,14 +21,20 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   const router = useRouter();
-  const { signInWithGoogle, signInWithEmail, uid, role } = useAuthStore();
+  const { signInWithGoogle, signInWithEmail, uid, role, className, classNum } = useAuthStore();
 
   // Redirect if already logged in
   useEffect(() => {
     if (uid && role) {
-      router.push(role === "teacher" ? "/teacher" : "/cards");
+      if (role === "teacher") {
+        router.push("/teacher");
+      } else if (className && classNum) {
+        router.push("/cards");
+      } else {
+        router.push("/select-class");
+      }
     }
-  }, [uid, role, router]);
+  }, [uid, role, className, classNum, router]);
 
   const handleGoogleLogin = async () => {
     setError("");

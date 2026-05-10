@@ -9,7 +9,7 @@ import {
   signOut as fbSignOut,
   type User,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { auth as getAuthInstance, db as getDbInstance } from "@/lib/firebase";
 import { normalizeUser, type UserDoc } from "@/lib/guardrails";
 import { encrypt, decrypt } from "@/lib/crypto";
@@ -36,6 +36,8 @@ interface AuthState {
   signInWithEmail: (email: string, password: string) => Promise<void>;
   // Logout
   logout: () => Promise<void>;
+  // Update student class (one-time selection)
+  updateClass: (className: string, classNum: string) => Promise<void>;
   // Init listener
   init: () => () => void;
 }
@@ -156,6 +158,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     await fbSignOut(getAuthInstance());
     set({ uid: null, role: null, userDoc: null, name: undefined, className: undefined, classNum: undefined });
+  },
+
+  updateClass: async (className, classNum) => {
+    const currentUid = useAuthStore.getState().uid;
+    if (!currentUid) throw new Error("Not authenticated");
+    const userRef = doc(getDbInstance(), "users", currentUid);
+    await updateDoc(userRef, {
+      classEnc: await encrypt(className),
+      classNumEnc: await encrypt(classNum),
+    });
+    set({ className, classNum });
   },
 }));
 

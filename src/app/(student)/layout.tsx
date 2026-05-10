@@ -25,13 +25,22 @@ export default function StudentLayout({
   useAuthInit();
   const pathname = usePathname();
   const router = useRouter();
-  const { uid, role, name, loading, logout } = useAuthStore();
+  const { uid, role, name, className, classNum, loading, logout } = useAuthStore();
 
   useEffect(() => {
     if (!loading && (!uid || role !== "student")) {
       router.push("/login");
     }
   }, [uid, role, loading, router]);
+
+  const needsClassSelection =
+    !loading && role === "student" && (!className || !classNum) && pathname !== "/select-class";
+
+  useEffect(() => {
+    if (needsClassSelection) {
+      router.push("/select-class");
+    }
+  }, [needsClassSelection, router]);
 
   const handleLogout = async () => {
     await logout();
