@@ -18,6 +18,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
+import { useAuthInit } from "@/hooks/use-auth-init";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,7 @@ export default function TeacherLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  useAuthInit();
   const { uid, name, logout, loading } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
