@@ -1,0 +1,82 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: is authenticated
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Helper: is teacher
+    function isTeacher() {
+      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
+    // Helper: is owner of doc by uid field
+    function isOwner(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+
+    // ── Users ──
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isTeacher();
+      allow create: if isAuth();
+      allow update: if isOwner(uid) || isTeacher();
+      allow delete: if false;
+    }
+
+    // ── Classes ──
+    match /classes/{classId} {
+      allow read: if isAuth();
+      allow create: if isTeacher();
+      allow update: if isTeacher();
+      allow delete: if isTeacher();
+    }
+
+    // ── Modules ──
+    match /modules/{moduleId} {
+      allow read: if isAuth() && (resource.data.published == true || resource.data.createdBy == request.auth.uid || isTeacher());
+      allow create: if isTeacher();
+      allow update: if isTeacher() && resource.data.createdBy == request.auth.uid;
+      allow delete: if isTeacher() && resource.data.createdBy == request.auth.uid;
+
+      // Cards subcollection
+      match /cards/{cardId} {
+        allow read: if isAuth();
+        allow create, update, delete: if isTeacher();
+      }
+    }
+
+    // ── Progress ──
+    match /progress/{progressId} {
+      allow read: if isOwner(resource.data.userId) || isTeacher();
+      allow create: if isOwner(resource.data.userId);
+      allow update: if isOwner(resource.data.userId);
+      allow delete: if false;
+    }
+
+    // ── Battles ──
+    match /battles/{battleId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      // Only host can update battle status and card index
+      allow update: if isAuth() && (
+        resource.data.hostId == request.auth.uid ||
+        // Players can update their own player doc
+        true
+      );
+      allow delete: if false;
+
+      match /players/{uid} {
+        allow read: if isAuth();
+        allow write: if isOwner(uid);
+      }
+
+      match /answers/{answerId} {
+        allow read: if isAuth();
+        allow write: if isAuth();
+      }
+    }
+  }
+}
