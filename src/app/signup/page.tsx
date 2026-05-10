@@ -10,13 +10,14 @@ import { useAuthInit } from "@/hooks/use-auth-init";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Loader2, Mail } from "lucide-react";
+import { BookOpen, Loader2, Mail, User, Lock } from "lucide-react";
 import { pageTransition } from "@/lib/animations";
 
-export default function LoginPage() {
+export default function SignupPage() {
   useAuthInit();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -30,32 +31,42 @@ export default function LoginPage() {
     }
   }, [uid, role, router]);
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignup = async () => {
     setError("");
     setLoading(true);
     try {
       await signInWithGoogle();
-      // The init() listener handles navigation via auth state
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Google sign-in failed");
+      setError(err instanceof Error ? err.message : "Google sign-up failed");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!email || !password) {
-      setError("Please enter email and password");
+
+    if (!email || !password || !confirmPassword) {
+      setError("Please fill in all fields");
       return;
     }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
     setLoading(true);
     try {
       await signInWithEmail(email, password);
-      // The init() listener handles navigation via auth state
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign-in failed");
+      setError(err instanceof Error ? err.message : "Sign-up failed");
     } finally {
       setLoading(false);
     }
@@ -77,21 +88,21 @@ export default function LoginPage() {
             <BookOpen className="size-8 text-warm-accent" />
           </motion.div>
           <h1 className="font-[family-name:var(--font-serif)] text-3xl font-normal text-warm-text">
-            VocabMaster
+            Create Account
           </h1>
           <p className="mt-1 text-sm text-warm-text-muted">
-            Your vocabulary learning companion
+            Join VocabMaster today
           </p>
         </div>
 
         {/* Form card */}
         <div className="rounded-2xl border border-warm-border bg-warm-surface p-6 shadow-sm">
-          {/* Google sign-in */}
+          {/* Google sign-up */}
           <Button
             type="button"
             variant="outline"
             className="w-full border-warm-border bg-warm-bg hover:bg-warm-surface-2"
-            onClick={handleGoogleLogin}
+            onClick={handleGoogleSignup}
             disabled={loading}
           >
             {loading ? (
@@ -104,7 +115,7 @@ export default function LoginPage() {
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                 </svg>
-                Continue with Google
+                Sign up with Google
               </>
             )}
           </Button>
@@ -120,7 +131,7 @@ export default function LoginPage() {
           </div>
 
           {/* Email/password form */}
-          <form onSubmit={handleEmailLogin} className="space-y-4">
+          <form onSubmit={handleEmailSignup} className="space-y-4">
             <div className="space-y-2">
               <Label className="text-warm-text">Email</Label>
               <Input
@@ -138,7 +149,18 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder="At least 6 characters"
+                className="border-warm-border bg-warm-bg focus:ring-warm-accent"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-warm-text">Confirm Password</Label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter password"
                 className="border-warm-border bg-warm-bg focus:ring-warm-accent"
               />
             </div>
@@ -156,18 +178,22 @@ export default function LoginPage() {
                 <Loader2 className="size-4 animate-spin" />
               ) : (
                 <>
-                  <Mail className="mr-2 size-4" />
-                  Sign In with Email
+                  <User className="mr-2 size-4" />
+                  Create Account
                 </>
               )}
             </Button>
           </form>
 
           <p className="mt-4 text-center text-xs text-warm-text-subtle">
-            Don't have an account?{" "}
-            <a href="/signup" className="underline hover:text-warm-text-muted">
-              Sign up
+            Already have an account?{" "}
+            <a href="/login" className="underline hover:text-warm-text-muted">
+              Sign in
             </a>
+          </p>
+
+          <p className="mt-2 text-center text-xs text-warm-text-subtle">
+            Only @makopan.edu.hk and @bunorden.com accounts are allowed.
           </p>
 
           <p className="mt-2 text-center text-xs text-warm-text-subtle">
