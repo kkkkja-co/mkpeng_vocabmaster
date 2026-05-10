@@ -61,7 +61,7 @@ export default function StudentsPage() {
   async function fetchStudents() {
     try {
       const studentsQ = query(
-        collection(db, "users"),
+        collection(db(), "users"),
         where("role", "==", "student"),
         orderBy("lastActive", "desc")
       );
@@ -86,7 +86,7 @@ export default function StudentsPage() {
         // Fetch score and modules studied
         const progressSnap = await getDocs(
           query(
-            collection(db, "progress"),
+            collection(db(), "progress"),
             where("userId", "==", docSnap.id)
           )
         );

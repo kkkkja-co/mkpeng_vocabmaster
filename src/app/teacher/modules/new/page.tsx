@@ -49,7 +49,7 @@ export default function NewModulePage() {
     if (!uid || !title.trim()) return;
     setSaving(true);
     try {
-      const modRef = await addDoc(collection(db, "modules"), {
+      const modRef = await addDoc(collection(db(), "modules"), {
         title: title.trim(),
         description: description.trim(),
         subject,

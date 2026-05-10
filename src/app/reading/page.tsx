@@ -93,7 +93,7 @@ export default function ReadingPage() {
     (async () => {
       setLoadingCards(true);
       try {
-        const cardsRef = collection(db, "modules", selectedModuleId, "cards");
+        const cardsRef = collection(db(), "modules", selectedModuleId, "cards");
         const q = query(cardsRef, orderBy("order", "asc"));
         const snap = await getDocs(q);
 

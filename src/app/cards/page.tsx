@@ -84,7 +84,7 @@ export default function CardsPage() {
     (async () => {
       setLoadingCards(true);
       try {
-        const cardsRef = collection(db, "modules", selectedModuleId, "cards");
+        const cardsRef = collection(db(), "modules", selectedModuleId, "cards");
         const q = query(cardsRef, orderBy("order", "asc"));
         const snap = await getDocs(q);
         const decrypted: EnrichedCard[] = await Promise.all(
@@ -175,7 +175,7 @@ export default function CardsPage() {
   useEffect(() => {
     if (!uid || !currentCard || !selectedModuleId) return;
     const progressId = `${uid}_${selectedModuleId}`;
-    const progressRef = doc(db, "progress", progressId);
+    const progressRef = doc(db(), "progress", progressId);
     setDoc(
       progressRef,
       {

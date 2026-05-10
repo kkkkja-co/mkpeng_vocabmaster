@@ -117,7 +117,7 @@ export default function MatchPage() {
     setWrongPair(null);
 
     try {
-      const cardsRef = collection(db, "modules", selectedModuleId, "cards");
+      const cardsRef = collection(db(), "modules", selectedModuleId, "cards");
       const q = query(cardsRef, orderBy("order", "asc"));
       const snap = await getDocs(q);
 

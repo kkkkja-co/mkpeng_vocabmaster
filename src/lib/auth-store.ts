@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { onAuthStateChanged, signInAnonymously, signOut as fbSignOut } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { auth as getAuthInstance, db as getDbInstance } from "@/lib/firebase";
 import { normalizeUser, type UserDoc } from "@/lib/guardrails";
 import { encrypt, decrypt } from "@/lib/crypto";
 
@@ -36,14 +36,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   classNum: undefined,
 
   init: () => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsub = onAuthStateChanged(getAuthInstance(), async (firebaseUser) => {
       if (!firebaseUser) {
         set({ uid: null, role: null, userDoc: null, loading: false });
         return;
       }
 
       const uid = firebaseUser.uid;
-      const userRef = doc(db, "users", uid);
+      const userRef = doc(getDbInstance(), "users", uid);
       const snap = await getDoc(userRef);
 
       if (snap.exists()) {
@@ -60,14 +60,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   studentLogin: async (name, className, classNum) => {
-    const cred = await signInAnonymously(auth);
+    const cred = await signInAnonymously(getAuthInstance());
     const uid = cred.user.uid;
     const [nameEnc, classEnc, classNumEnc] = await Promise.all([
       encrypt(name),
       encrypt(className),
       encrypt(classNum),
     ]);
-    const userRef = doc(db, "users", uid);
+    const userRef = doc(getDbInstance(), "users", uid);
     await setDoc(userRef, {
       firebaseUid: uid,
       role: "student",
@@ -82,9 +82,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   teacherLogin: async (email, password) => {
     const { signInWithEmailAndPassword } = await import("firebase/auth");
-    const cred = await signInWithEmailAndPassword(auth, email, password);
+    const cred = await signInWithEmailAndPassword(getAuthInstance(), email, password);
     const uid = cred.user.uid;
-    const userRef = doc(db, "users", uid);
+    const userRef = doc(getDbInstance(), "users", uid);
     const snap = await getDoc(userRef);
     if (snap.exists()) {
       const data = normalizeUser(snap.data() as Record<string, unknown>);
@@ -93,7 +93,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
-    await fbSignOut(auth);
+    await fbSignOut(getAuthInstance());
     set({ uid: null, role: null, userDoc: null, name: undefined, className: undefined, classNum: undefined });
   },
 }));

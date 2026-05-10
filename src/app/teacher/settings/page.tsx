@@ -54,7 +54,7 @@ export default function SettingsPage() {
   async function fetchProfile() {
     if (!uid) return;
     try {
-      const userSnap = await getDoc(doc(db, "users", uid));
+      const userSnap = await getDoc(doc(db(), "users", uid));
       const userData = userSnap.exists() ? userSnap.data() : {};
 
       // Get email from auth
@@ -65,10 +65,10 @@ export default function SettingsPage() {
       const { collection, query, where, getDocs } = await import("firebase/firestore");
 
       const modulesSnap = await getDocs(
-        query(collection(db, "modules"), where("createdBy", "==", uid))
+        query(collection(db(), "modules"), where("createdBy", "==", uid))
       );
       const classesSnap = await getDocs(
-        query(collection(db, "classes"), where("teacherId", "==", uid))
+        query(collection(db(), "classes"), where("teacherId", "==", uid))
       );
 
       const joinedDate = userData.createdAt

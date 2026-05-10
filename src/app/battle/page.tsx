@@ -64,7 +64,7 @@ export default function BattleLobbyPage() {
   // Fetch published modules
   useEffect(() => {
     const q = query(
-      collection(db, "modules"),
+      collection(db(), "modules"),
       where("published", "==", true)
     );
     const unsub = onSnapshot(q, (snap) => {
@@ -93,7 +93,7 @@ export default function BattleLobbyPage() {
     try {
       const module = modules.find((m) => m.id === selectedModule);
       const inviteCodeStr = nanoid(6).toUpperCase();
-      const battleRef = await addDoc(collection(db, "battles"), {
+      const battleRef = await addDoc(collection(db(), "battles"), {
         status: "waiting",
         moduleId: selectedModule,
         hostId: uid,
@@ -106,7 +106,7 @@ export default function BattleLobbyPage() {
       });
 
       // Add host as player
-      await setDoc(doc(db, "battles", battleRef.id, "players", uid), {
+      await setDoc(doc(db(), "battles", battleRef.id, "players", uid), {
         displayName: name ?? "Host",
         class: className ?? "",
         score: 0,
@@ -139,7 +139,7 @@ export default function BattleLobbyPage() {
     setJoining(true);
     try {
       const q = query(
-        collection(db, "battles"),
+        collection(db(), "battles"),
         where("inviteCode", "==", inviteCode.trim().toUpperCase()),
         where("status", "==", "waiting")
       );
@@ -156,12 +156,12 @@ export default function BattleLobbyPage() {
 
       // Check if player already joined
       const playerSnap = await getDocs(
-        collection(db, "battles", battleId, "players")
+        collection(db(), "battles", battleId, "players")
       );
       const alreadyJoined = playerSnap.docs.some((d) => d.id === uid);
 
       if (!alreadyJoined) {
-        await setDoc(doc(db, "battles", battleId, "players", uid), {
+        await setDoc(doc(db(), "battles", battleId, "players", uid), {
           displayName: name ?? "Player",
           class: className ?? "",
           score: 0,

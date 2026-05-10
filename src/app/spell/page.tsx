@@ -112,7 +112,7 @@ export default function SpellPage() {
     setShowAnswer(false);
 
     try {
-      const cardsRef = collection(db, "modules", selectedModuleId, "cards");
+      const cardsRef = collection(db(), "modules", selectedModuleId, "cards");
       const q = query(cardsRef, orderBy("order", "asc"));
       const snap = await getDocs(q);
 
@@ -143,7 +143,7 @@ export default function SpellPage() {
     if (totalStudied === 0) return;
 
     const progressId = `${uid}_${selectedModuleId}`;
-    const progressRef = doc(db, "progress", progressId);
+    const progressRef = doc(db(), "progress", progressId);
     setDoc(
       progressRef,
       {

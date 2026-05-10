@@ -135,7 +135,7 @@ export default function ModuleEditorPage({
 
   const fetchModule = useCallback(async () => {
     try {
-      const modSnap = await getDoc(doc(db, "modules", moduleId));
+      const modSnap = await getDoc(doc(db(), "modules", moduleId));
       if (!modSnap.exists()) {
         toast.error("Module not found");
         router.push("/teacher/modules");
@@ -168,7 +168,7 @@ export default function ModuleEditorPage({
       // Fetch cards
       const cardsSnap = await getDocs(
         query(
-          collection(db, "modules", moduleId, "cards"),
+          collection(db(), "modules", moduleId, "cards"),
           orderBy("order", "asc")
         )
       );
@@ -221,7 +221,7 @@ export default function ModuleEditorPage({
     if (!uid) return;
     try {
       const q = query(
-        collection(db, "classes"),
+        collection(db(), "classes"),
         where("teacherId", "==", uid)
       );
       const snap = await getDocs(q);
@@ -243,7 +243,7 @@ export default function ModuleEditorPage({
   async function saveSettings() {
     setSaving(true);
     try {
-      await updateDoc(doc(db, "modules", moduleId), {
+      await updateDoc(doc(db(), "modules", moduleId), {
         title: settings.title,
         description: settings.description,
         subject: settings.subject,
@@ -264,7 +264,7 @@ export default function ModuleEditorPage({
   async function togglePublish() {
     try {
       const newPublished = !settings.published;
-      await updateDoc(doc(db, "modules", moduleId), {
+      await updateDoc(doc(db(), "modules", moduleId), {
         published: newPublished,
         updatedAt: serverTimestamp(),
       });
@@ -323,7 +323,7 @@ export default function ModuleEditorPage({
       if (editingCard) {
         // Update existing card
         await updateDoc(
-          doc(db, "modules", moduleId, "cards", editingCard.id),
+          doc(db(), "modules", moduleId, "cards", editingCard.id),
           {
             word: cardForm.word.trim(),
             definitionEnc,
@@ -335,7 +335,7 @@ export default function ModuleEditorPage({
         toast.success("Card updated");
       } else {
         // Create new card
-        await addDoc(collection(db, "modules", moduleId, "cards"), {
+        await addDoc(collection(db(), "modules", moduleId, "cards"), {
           word: cardForm.word.trim(),
           definitionEnc,
           chineseMeaningEnc,
@@ -347,7 +347,7 @@ export default function ModuleEditorPage({
         });
 
         // Update total cards count
-        await updateDoc(doc(db, "modules", moduleId), {
+        await updateDoc(doc(db(), "modules", moduleId), {
           totalCards: cards.length + 1,
           updatedAt: serverTimestamp(),
         });
@@ -366,8 +366,8 @@ export default function ModuleEditorPage({
 
   async function deleteCard(cardId: string) {
     try {
-      await deleteDoc(doc(db, "modules", moduleId, "cards", cardId));
-      await updateDoc(doc(db, "modules", moduleId), {
+      await deleteDoc(doc(db(), "modules", moduleId, "cards", cardId));
+      await updateDoc(doc(db(), "modules", moduleId), {
         totalCards: Math.max(0, cards.length - 1),
         updatedAt: serverTimestamp(),
       });
@@ -395,7 +395,7 @@ export default function ModuleEditorPage({
 
       const { url } = await res.json();
       await updateDoc(
-        doc(db, "modules", moduleId, "cards", cardId),
+        doc(db(), "modules", moduleId, "cards", cardId),
         { audioUrl: url }
       );
       toast.success("Audio uploaded");

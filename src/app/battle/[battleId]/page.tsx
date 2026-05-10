@@ -44,7 +44,7 @@ export default function BattleRoomPage({
     if (!battleId) return;
 
     const unsub = onSnapshot(
-      doc(db, "battles", battleId),
+      doc(db(), "battles", battleId),
       (snap) => {
         if (!snap.exists()) {
           setError("Battle not found");
@@ -68,7 +68,7 @@ export default function BattleRoomPage({
     if (!battleId) return;
 
     const unsub = onSnapshot(
-      collection(db, "battles", battleId, "players"),
+      collection(db(), "battles", battleId, "players"),
       (snap) => {
         const map: Record<string, PlayerDoc> = {};
         snap.docs.forEach((d) => {

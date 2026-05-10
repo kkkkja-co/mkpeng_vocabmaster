@@ -17,8 +17,6 @@ if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
 }
 
 let _app: FirebaseApp;
-let _auth: Auth;
-let _db: Firestore;
 
 function ensureApp(): FirebaseApp {
   if (!_app) {
@@ -27,29 +25,16 @@ function ensureApp(): FirebaseApp {
   return _app;
 }
 
-function getFirebaseAuth(): Auth {
-  if (!_auth) {
-    _auth = getAuth(ensureApp());
-  }
+// Lazy-initialized singletons — no Proxy, safe with instanceof checks
+let _auth: Auth | null = null;
+let _db: Firestore | null = null;
+
+export function auth(): Auth {
+  if (!_auth) _auth = getAuth(ensureApp());
   return _auth;
 }
 
-function getFirebaseDb(): Firestore {
-  if (!_db) {
-    _db = getFirestore(ensureApp());
-  }
+export function db(): Firestore {
+  if (!_db) _db = getFirestore(ensureApp());
   return _db;
 }
-
-// Lazy getters - only initialize Firebase when actually accessed
-export const auth = new Proxy({} as Auth, {
-  get(_, prop) {
-    return Reflect.get(getFirebaseAuth(), prop);
-  },
-});
-
-export const db = new Proxy({} as Firestore, {
-  get(_, prop) {
-    return Reflect.get(getFirebaseDb(), prop);
-  },
-});

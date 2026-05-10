@@ -96,7 +96,7 @@ export default function TeacherDashboardPage() {
       try {
         // Fetch students
         const studentsQ = query(
-          collection(db, "users"),
+          collection(db(), "users"),
           where("role", "==", "student")
         );
         const studentsSnap = await getDocs(studentsQ);
@@ -116,7 +116,7 @@ export default function TeacherDashboardPage() {
 
         // Fetch modules by teacher
         const modulesQ = query(
-          collection(db, "modules"),
+          collection(db(), "modules"),
           where("createdBy", "==", uid)
         );
         const modulesSnap = await getDocs(modulesQ);
@@ -125,7 +125,7 @@ export default function TeacherDashboardPage() {
         ).length;
 
         // Fetch progress records
-        const progressSnap = await getDocs(collection(db, "progress"));
+        const progressSnap = await getDocs(collection(db(), "progress"));
         let totalScore = 0;
         let scoreCount = 0;
         const scoreMap: Record<string, number> = {};
@@ -183,7 +183,7 @@ export default function TeacherDashboardPage() {
         for (const [userId, score] of sortedScores) {
           try {
             const userSnap = await getDocs(
-              query(collection(db, "users"), where("__name__", "==", userId))
+              query(collection(db(), "users"), where("__name__", "==", userId))
             );
             if (!userSnap.empty) {
               const userData = userSnap.docs[0].data();
@@ -191,7 +191,7 @@ export default function TeacherDashboardPage() {
 
               const userProgress = await getDocs(
                 query(
-                  collection(db, "progress"),
+                  collection(db(), "progress"),
                   where("userId", "==", userId),
                   where("completedAt", "!=", null)
                 )
@@ -246,7 +246,7 @@ export default function TeacherDashboardPage() {
         // Build activity feed (simple mock from recent progress)
         const recentProgress = await getDocs(
           query(
-            collection(db, "progress"),
+            collection(db(), "progress"),
             orderBy("lastStudied", "desc"),
             limit(10)
           )
@@ -259,7 +259,7 @@ export default function TeacherDashboardPage() {
           if (lastStudied) {
             try {
               const userSnap = await getDocs(
-                query(collection(db, "users"), where("__name__", "==", prog.userId))
+                query(collection(db(), "users"), where("__name__", "==", prog.userId))
               );
               let studentName = "A student";
               if (!userSnap.empty) {

@@ -80,7 +80,7 @@ export default function ClassesPage() {
     if (!uid) return;
     try {
       const q = query(
-        collection(db, "classes"),
+        collection(db(), "classes"),
         where("teacherId", "==", uid),
         orderBy("createdAt", "desc")
       );
@@ -101,7 +101,7 @@ export default function ClassesPage() {
     if (!uid || !newClassName.trim()) return;
     setSaving(true);
     try {
-      await addDoc(collection(db, "classes"), {
+      await addDoc(collection(db(), "classes"), {
         name: newClassName.trim(),
         teacherId: uid,
         studentUids: [],
@@ -125,7 +125,7 @@ export default function ClassesPage() {
     if (!selectedClass || !renameValue.trim()) return;
     setSaving(true);
     try {
-      await updateDoc(doc(db, "classes", selectedClass.id), {
+      await updateDoc(doc(db(), "classes", selectedClass.id), {
         name: renameValue.trim(),
         updatedAt: serverTimestamp(),
       });
@@ -146,7 +146,7 @@ export default function ClassesPage() {
     if (!selectedClass) return;
     setSaving(true);
     try {
-      await deleteDoc(doc(db, "classes", selectedClass.id));
+      await deleteDoc(doc(db(), "classes", selectedClass.id));
       toast.success("Class deleted");
       setShowDeleteDialog(false);
       setSelectedClass(null);

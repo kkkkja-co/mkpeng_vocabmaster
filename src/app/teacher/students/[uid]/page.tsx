@@ -76,7 +76,7 @@ export default function StudentDetailPage({
   async function fetchStudentData() {
     try {
       // Fetch user doc
-      const userSnap = await getDoc(doc(db, "users", studentUid));
+      const userSnap = await getDoc(doc(db(), "users", studentUid));
       if (!userSnap.exists()) {
         setLoading(false);
         return;
@@ -110,7 +110,7 @@ export default function StudentDetailPage({
       // Fetch progress
       const progressSnap = await getDocs(
         query(
-          collection(db, "progress"),
+          collection(db(), "progress"),
           where("userId", "==", studentUid)
         )
       );
@@ -121,7 +121,7 @@ export default function StudentDetailPage({
         let moduleTitle = "Unknown Module";
 
         try {
-          const modSnap = await getDoc(doc(db, "modules", pData.moduleId as string));
+          const modSnap = await getDoc(doc(db(), "modules", pData.moduleId as string));
           if (modSnap.exists()) {
             moduleTitle = (modSnap.data().title as string) ?? "Unknown Module";
           }
@@ -148,7 +148,7 @@ export default function StudentDetailPage({
       // Fetch battle history
       const battlesSnap = await getDocs(
         query(
-          collection(db, "battles"),
+          collection(db(), "battles"),
           where("status", "==", "finished")
         )
       );
@@ -159,7 +159,7 @@ export default function StudentDetailPage({
         // Check if this student was in the battle
         try {
           const playersSnap = await getDocs(
-            collection(db, "battles", bDoc.id, "players")
+            collection(db(), "battles", bDoc.id, "players")
           );
           const studentPlayer = playersSnap.docs.find(
             (p) => p.id === studentUid
@@ -176,7 +176,7 @@ export default function StudentDetailPage({
 
           let moduleTitle = "Unknown";
           try {
-            const modSnap = await getDoc(doc(db, "modules", bData.moduleId as string));
+            const modSnap = await getDoc(doc(db(), "modules", bData.moduleId as string));
             if (modSnap.exists()) {
               moduleTitle = (modSnap.data().title as string) ?? "Unknown";
             }

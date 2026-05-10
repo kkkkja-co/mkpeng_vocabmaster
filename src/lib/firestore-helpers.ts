@@ -28,7 +28,7 @@ function docData(doc: { data(): DocumentData }): Record<string, unknown> {
 // ── User helpers ──
 export async function getUser(uid: string): Promise<UserDoc | null> {
   const { doc, getDoc } = await import("firebase/firestore");
-  const snap = await getDoc(doc(db, USERS, uid));
+  const snap = await getDoc(doc(db(), USERS, uid));
   if (!snap.exists()) return null;
   return normalizeUser(docData(snap));
 }
@@ -46,7 +46,7 @@ export async function getUserDecrypted(uid: string) {
 
 export async function getTeachers(): Promise<UserDoc[]> {
   const { getDocs } = await import("firebase/firestore");
-  const q = query(collection(db, USERS), where("role", "==", "teacher"));
+  const q = query(collection(db(), USERS), where("role", "==", "teacher"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => normalizeUser(docData(d)));
 }
@@ -55,7 +55,7 @@ export async function getTeachers(): Promise<UserDoc[]> {
 export async function getClassesByTeacher(teacherId: string) {
   const { getDocs } = await import("firebase/firestore");
   const q = query(
-    collection(db, CLASSES),
+    collection(db(), CLASSES),
     where("teacherId", "==", teacherId),
     orderBy("createdAt", "desc")
   );
@@ -65,7 +65,7 @@ export async function getClassesByTeacher(teacherId: string) {
 
 export async function getAllClasses() {
   const { getDocs } = await import("firebase/firestore");
-  const snap = await getDocs(collection(db, CLASSES));
+  const snap = await getDocs(collection(db(), CLASSES));
   return snap.docs.map((d) => ({ id: d.id, ...docData(d) }));
 }
 
@@ -73,7 +73,7 @@ export async function getAllClasses() {
 export async function getPublishedModules(): Promise<(ModuleDoc & { id: string })[]> {
   const { getDocs } = await import("firebase/firestore");
   const q = query(
-    collection(db, MODULES),
+    collection(db(), MODULES),
     where("published", "==", true),
     orderBy("createdAt", "desc")
   );
@@ -84,7 +84,7 @@ export async function getPublishedModules(): Promise<(ModuleDoc & { id: string }
 export async function getModulesByTeacher(teacherId: string): Promise<(ModuleDoc & { id: string })[]> {
   const { getDocs } = await import("firebase/firestore");
   const q = query(
-    collection(db, MODULES),
+    collection(db(), MODULES),
     where("createdBy", "==", teacherId),
     orderBy("updatedAt", "desc")
   );
@@ -96,14 +96,14 @@ export async function getModulesByTeacher(teacherId: string): Promise<(ModuleDoc
 export async function getProgress(userId: string, moduleId: string) {
   const { doc, getDoc } = await import("firebase/firestore");
   const id = `${userId}_${moduleId}`;
-  const snap = await getDoc(doc(db, PROGRESS, id));
+  const snap = await getDoc(doc(db(), PROGRESS, id));
   if (!snap.exists()) return null;
   return docData(snap);
 }
 
 export async function getProgressByModule(moduleId: string) {
   const { getDocs } = await import("firebase/firestore");
-  const q = query(collection(db, PROGRESS), where("moduleId", "==", moduleId));
+  const q = query(collection(db(), PROGRESS), where("moduleId", "==", moduleId));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...docData(d) }));
 }

@@ -76,13 +76,13 @@ export default function AnalyticsPage() {
     if (!uid) return;
     try {
       // Fetch all progress records
-      const progressSnap = await getDocs(collection(db, "progress"));
+      const progressSnap = await getDocs(collection(db(), "progress"));
       const allProgress = progressSnap.docs.map((d) => d.data());
 
       // Fetch modules by teacher for completions
       const modulesSnap = await getDocs(
         query(
-          collection(db, "modules"),
+          collection(db(), "modules"),
           where("createdBy", "==", uid),
           where("published", "==", true)
         )
@@ -202,7 +202,7 @@ export default function AnalyticsPage() {
         let title = "Unknown";
         try {
           const modSnap = await getDocs(
-            query(collection(db, "modules"), where("__name__", "==", moduleId))
+            query(collection(db(), "modules"), where("__name__", "==", moduleId))
           );
           if (!modSnap.empty) {
             title = (modSnap.docs[0].data().title as string) ?? "Unknown";

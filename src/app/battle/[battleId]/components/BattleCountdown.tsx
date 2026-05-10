@@ -31,7 +31,7 @@ export function BattleCountdown({ battleId, battle }: BattleCountdownProps) {
           // Transition to active
           if (!hasStartedRef.current) {
             hasStartedRef.current = true;
-            updateDoc(doc(db, "battles", battleId), {
+            updateDoc(doc(db(), "battles", battleId), {
               status: "active",
               currentCardIndex: 0,
               currentCardStart: serverTimestamp(),

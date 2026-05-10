@@ -76,7 +76,7 @@ export function ResultsScreen({
   const handlePlayAgain = async () => {
     try {
       // Reset all players and battle state
-      await updateDoc(doc(db, "battles", battleId), {
+      await updateDoc(doc(db(), "battles", battleId), {
         status: "countdown",
         currentCardIndex: 0,
         currentCardStart: null,
@@ -85,7 +85,7 @@ export function ResultsScreen({
       // Reset all player scores
       for (const player of sorted) {
         await updateDoc(
-          doc(db, "battles", battleId, "players", player.id),
+          doc(db(), "battles", battleId, "players", player.id),
           {
             score: 0,
             streak: 0,

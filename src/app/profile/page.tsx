@@ -59,7 +59,7 @@ export default function ProfilePage() {
     (async () => {
       try {
         const q = query(
-          collection(db, "progress"),
+          collection(db(), "progress"),
           where("userId", "==", uid),
           orderBy("lastStudied", "desc")
         );
@@ -72,7 +72,7 @@ export default function ProfilePage() {
             let moduleTitle = "Unknown Module";
             try {
               const { doc, getDoc } = await import("firebase/firestore");
-              const modSnap = await getDoc(doc(db, "modules", data.moduleId));
+              const modSnap = await getDoc(doc(db(), "modules", data.moduleId));
               if (modSnap.exists()) {
                 moduleTitle = (modSnap.data().title as string) ?? "Unknown Module";
               }

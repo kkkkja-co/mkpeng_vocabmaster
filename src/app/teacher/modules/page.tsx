@@ -83,7 +83,7 @@ export default function ModulesPage() {
     if (!uid) return;
     try {
       const q = query(
-        collection(db, "modules"),
+        collection(db(), "modules"),
         where("createdBy", "==", uid)
       );
       const snap = await getDocs(q);
@@ -107,7 +107,7 @@ export default function ModulesPage() {
   async function togglePublish(mod: ModuleItem) {
     setTogglingId(mod.id);
     try {
-      await updateDoc(doc(db, "modules", mod.id), {
+      await updateDoc(doc(db(), "modules", mod.id), {
         published: !mod.published,
         updatedAt: serverTimestamp(),
       });
@@ -125,7 +125,7 @@ export default function ModulesPage() {
 
   async function duplicateModule(mod: ModuleItem) {
     try {
-      const newModRef = await addDoc(collection(db, "modules"), {
+      const newModRef = await addDoc(collection(db(), "modules"), {
         title: `${mod.title} (Copy)`,
         description: mod.description,
         subject: mod.subject,
@@ -141,11 +141,11 @@ export default function ModulesPage() {
 
       // Copy cards
       const cardsSnap = await getDocs(
-        collection(db, "modules", mod.id, "cards")
+        collection(db(), "modules", mod.id, "cards")
       );
       for (const cardDoc of cardsSnap.docs) {
         const cardData = cardDoc.data();
-        await addDoc(collection(db, "modules", newModRef.id, "cards"), {
+        await addDoc(collection(db(), "modules", newModRef.id, "cards"), {
           ...cardData,
           createdAt: serverTimestamp(),
         });
@@ -165,12 +165,12 @@ export default function ModulesPage() {
     try {
       // Delete cards subcollection
       const cardsSnap = await getDocs(
-        collection(db, "modules", deleteTarget.id, "cards")
+        collection(db(), "modules", deleteTarget.id, "cards")
       );
       for (const cardDoc of cardsSnap.docs) {
-        await deleteDoc(doc(db, "modules", deleteTarget.id, "cards", cardDoc.id));
+        await deleteDoc(doc(db(), "modules", deleteTarget.id, "cards", cardDoc.id));
       }
-      await deleteDoc(doc(db, "modules", deleteTarget.id));
+      await deleteDoc(doc(db(), "modules", deleteTarget.id));
       toast.success("Module deleted");
       setDeleteTarget(null);
       await fetchModules();

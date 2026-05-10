@@ -42,7 +42,7 @@ export function WaitingRoom({
     if (!isHost || starting) return;
     setStarting(true);
     try {
-      await updateDoc(doc(db, "battles", battleId), {
+      await updateDoc(doc(db(), "battles", battleId), {
         status: "countdown",
       });
     } catch (err) {

@@ -76,7 +76,7 @@ export default function BattleHistoryPage() {
       // Fetch finished battles
       const battlesSnap = await getDocs(
         query(
-          collection(db, "battles"),
+          collection(db(), "battles"),
           where("status", "==", "finished"),
           orderBy("createdAt", "desc"),
           limit(50)
@@ -94,7 +94,7 @@ export default function BattleHistoryPage() {
 
         // Get players
         const playersSnap = await getDocs(
-          collection(db, "battles", bDoc.id, "players")
+          collection(db(), "battles", bDoc.id, "players")
         );
 
         const players = playersSnap.docs.map((p) => ({
@@ -114,7 +114,7 @@ export default function BattleHistoryPage() {
         let moduleTitle = "Unknown";
         try {
           const modSnap = await getDocs(
-            query(collection(db, "modules"), where("__name__", "==", bData.moduleId))
+            query(collection(db(), "modules"), where("__name__", "==", bData.moduleId))
           );
           if (!modSnap.empty) {
             moduleTitle = (modSnap.docs[0].data().title as string) ?? "Unknown";

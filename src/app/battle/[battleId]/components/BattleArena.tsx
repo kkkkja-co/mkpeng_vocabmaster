@@ -73,7 +73,7 @@ export function BattleArena({
     async function loadCards() {
       try {
         const cardsSnap = await getDocs(
-          collection(db, "modules", battle.moduleId, "cards")
+          collection(db(), "modules", battle.moduleId, "cards")
         );
         const rawCards = cardsSnap.docs.map((d) =>
           normalizeCard(d.data() as Record<string, unknown>)
@@ -171,11 +171,11 @@ export function BattleArena({
       const advanceTimeout = setTimeout(async () => {
         try {
           if (cardIndex + 1 >= totalCards) {
-            await updateDoc(doc(db, "battles", battleId), {
+            await updateDoc(doc(db(), "battles", battleId), {
               status: "finished",
             });
           } else {
-            await updateDoc(doc(db, "battles", battleId), {
+            await updateDoc(doc(db(), "battles", battleId), {
               currentCardIndex: cardIndex + 1,
               currentCardStart: serverTimestamp(),
             });
@@ -223,9 +223,9 @@ export function BattleArena({
       }
 
       try {
-        await runTransaction(db, async (transaction) => {
+        await runTransaction(db(), async (transaction) => {
           const playerRef = doc(
-            db,
+            db(),
             "battles",
             battleId,
             "players",
@@ -249,7 +249,7 @@ export function BattleArena({
 
           // Write answer doc
           const answerRef = doc(
-            collection(db, "battles", battleId, "answers")
+            collection(db(), "battles", battleId, "answers")
           );
           transaction.set(answerRef, {
             uid: currentUid,
