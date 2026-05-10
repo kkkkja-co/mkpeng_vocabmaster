@@ -29,6 +29,7 @@ import {
   Loader2,
   Layers,
 } from "lucide-react";
+import { addWordToCollection } from "@/lib/collections";
 
 interface EnrichedCard extends CardDoc {
   id: string;
@@ -140,8 +141,21 @@ export default function CardsPage() {
   }, [partFilter]);
 
   const handleFlip = useCallback(() => {
-    setIsFlipped((prev) => !prev);
-  }, []);
+    setIsFlipped((prev) => {
+      // When flipping to back, collect the word
+      if (!prev && currentCard && uid) {
+        addWordToCollection(
+          uid,
+          currentCard.moduleId,
+          currentCard.id,
+          currentCard.word,
+          currentCard.definition,
+          currentCard.exampleSentence
+        ).catch(() => {});
+      }
+      return !prev;
+    });
+  }, [currentCard, uid]);
 
   const handlePrev = useCallback(() => {
     if (currentIndex > 0) {

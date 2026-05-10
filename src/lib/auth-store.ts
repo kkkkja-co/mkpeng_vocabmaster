@@ -96,8 +96,26 @@ export const useAuthStore = create<AuthState>((set) => ({
           await setDoc(userRef, userDoc);
           set({ uid, role, userDoc: normalizeUser(userDoc), loading: false, name: email.split("@")[0] });
         } else {
-          // Students still need class/number info — redirect to complete profile
-          set({ uid, role: null, userDoc: null, loading: false });
+          // Create student document with default values
+          const userDoc = {
+            firebaseUid: uid,
+            role: "student" as const,
+            nameEnc: await encrypt(email.split("@")[0]),
+            classEnc: await encrypt(""),
+            classNumEnc: await encrypt(""),
+            createdAt: serverTimestamp(),
+            lastActive: serverTimestamp(),
+          };
+          await setDoc(userRef, userDoc);
+          set({
+            uid,
+            role,
+            userDoc: normalizeUser(userDoc),
+            loading: false,
+            name: email.split("@")[0],
+            className: "",
+            classNum: ""
+          });
         }
       }
     });

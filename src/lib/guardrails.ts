@@ -59,7 +59,8 @@ export interface ProgressDoc {
 }
 
 export interface BattleDoc {
-  status: "waiting" | "countdown" | "active" | "finished";
+  status: "waiting" | "countdown" | "active" | "finished" | "challenge_sent" | "challenge_denied";
+  battleType: "quiz" | "spelling";
   moduleId: string;
   hostId: string;
   inviteCode: string;
@@ -67,6 +68,9 @@ export interface BattleDoc {
   currentCardStart: Timestamp | null;
   timePerCard: number;
   totalCards: number;
+  challengerId: string;
+  opponentId: string;
+  opponentClass: string;
   createdAt: Timestamp;
 }
 
@@ -163,6 +167,7 @@ export function normalizePlayer(data: Record<string, unknown>): PlayerDoc {
 export function normalizeBattle(data: Record<string, unknown>): BattleDoc {
   return {
     status: (data.status as BattleDoc["status"]) ?? "waiting",
+    battleType: (data.battleType as BattleDoc["battleType"]) ?? "quiz",
     moduleId: (data.moduleId as string) ?? "",
     hostId: (data.hostId as string) ?? "",
     inviteCode: (data.inviteCode as string) ?? "",
@@ -170,6 +175,9 @@ export function normalizeBattle(data: Record<string, unknown>): BattleDoc {
     currentCardStart: (data.currentCardStart as Timestamp) ?? null,
     timePerCard: (data.timePerCard as number) ?? 15,
     totalCards: (data.totalCards as number) ?? 0,
+    challengerId: (data.challengerId as string) ?? "",
+    opponentId: (data.opponentId as string) ?? "",
+    opponentClass: (data.opponentClass as string) ?? "",
     createdAt: (data.createdAt as Timestamp) ?? Timestamp.now(),
   };
 }

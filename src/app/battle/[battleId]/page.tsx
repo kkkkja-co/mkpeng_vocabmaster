@@ -21,9 +21,11 @@ import {
 import { WaitingRoom } from "./components/WaitingRoom";
 import { BattleCountdown } from "./components/BattleCountdown";
 import { BattleArena } from "./components/BattleArena";
+import { SpellingBattle } from "./components/SpellingBattle";
 import { ResultsScreen } from "./components/ResultsScreen";
 import { Loader2 } from "lucide-react";
 import { pageTransition } from "@/lib/animations";
+import { toast } from "sonner";
 
 export default function BattleRoomPage({
   params,
@@ -38,6 +40,7 @@ export default function BattleRoomPage({
   const [players, setPlayers] = useState<Record<string, PlayerDoc>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [prevStatus, setPrevStatus] = useState<BattleDoc["status"] | null>(null);
 
   // Subscribe to battle document
   useEffect(() => {
@@ -51,7 +54,19 @@ export default function BattleRoomPage({
           setLoading(false);
           return;
         }
-        setBattle(normalizeBattle(snap.data() as Record<string, unknown>));
+        const newBattle = normalizeBattle(snap.data() as Record<string, unknown>);
+
+        // Detect challenge denied
+        if (prevStatus === "challenge_sent" && newBattle.status === "challenge_denied") {
+          toast.error("Challenge denied!", {
+            description: "Your opponent declined the challenge.",
+            duration: 5000,
+          });
+          setTimeout(() => router.push("/battle"), 3000);
+        }
+
+        setPrevStatus(newBattle.status);
+        setBattle(newBattle);
         setLoading(false);
       },
       (err) => {
@@ -61,7 +76,7 @@ export default function BattleRoomPage({
     );
 
     return unsub;
-  }, [battleId]);
+  }, [battleId, prevStatus, router]);
 
   // Subscribe to players subcollection
   useEffect(() => {
@@ -117,11 +132,24 @@ export default function BattleRoomPage({
 
   if (!battle || !uid) return null;
 
+  const isSpellingBattle = battle.battleType === "spelling";
+
   return (
     <main className="min-h-screen bg-[#f5f0e8]">
       <AnimatePresence mode="wait">
         {battle.status === "waiting" && (
           <motion.div key="waiting" {...pageTransition}>
+            <WaitingRoom
+              battleId={battleId}
+              battle={battle}
+              players={players}
+              currentUid={uid}
+            />
+          </motion.div>
+        )}
+
+        {battle.status === "challenge_sent" && (
+          <motion.div key="challenge_sent" {...pageTransition}>
             <WaitingRoom
               battleId={battleId}
               battle={battle}
@@ -139,12 +167,21 @@ export default function BattleRoomPage({
 
         {battle.status === "active" && (
           <motion.div key="active" {...pageTransition}>
-            <BattleArena
-              battleId={battleId}
-              battle={battle}
-              players={players}
-              currentUid={uid}
-            />
+            {isSpellingBattle ? (
+              <SpellingBattle
+                battleId={battleId}
+                battle={battle}
+                players={players}
+                currentUid={uid}
+              />
+            ) : (
+              <BattleArena
+                battleId={battleId}
+                battle={battle}
+                players={players}
+                currentUid={uid}
+              />
+            )}
           </motion.div>
         )}
 

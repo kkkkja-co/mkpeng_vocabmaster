@@ -11,6 +11,7 @@ import { normalizeCard, type CardDoc } from "@/lib/guardrails";
 import { decrypt } from "@/lib/crypto";
 import { getPublishedModules } from "@/lib/firestore-helpers";
 import { pageTransition, springSnappy, springBouncy, staggerContainer, staggerItem } from "@/lib/animations";
+import { addWordToCollection } from "@/lib/collections";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -19,13 +20,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Swords, Loader2, Trophy, Clock, RotateCcw } from "lucide-react";
+import { Swords, Loader2, Trophy, Clock, RotateCcw, Medal } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface MatchCard {
   id: string;
   text: string;
   pairId: string;
   type: "word" | "definition";
+  wordData?: { word: string; definition: string; exampleSentence: string };
 }
 
 interface ModuleDocWithId {
@@ -56,6 +59,8 @@ function shuffleArray<T>(arr: T[]): T[] {
   return shuffled;
 }
 
+type PartFilter = "all" | "A" | "B1" | "B2";
+
 export default function MatchPage() {
   const uid = useAuthStore((s) => s.uid);
 
@@ -63,7 +68,9 @@ export default function MatchPage() {
   const [selectedModuleId, setSelectedModuleId] = useState("");
   const [loadingModules, setLoadingModules] = useState(true);
   const [loadingCards, setLoadingCards] = useState(false);
+  const [partFilter, setPartFilter] = useState<PartFilter>("all");
 
+  const [allRawCards, setAllRawCards] = useState<Array<{ raw: ReturnType<typeof normalizeCard>; id: string }>>([]);
   const [matchCards, setMatchCards] = useState<MatchCard[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
@@ -74,6 +81,29 @@ export default function MatchPage() {
   const [timer, setTimer] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameFinished, setGameFinished] = useState(false);
+
+  const matchTotalPairs = useMemo(() => new Set(matchCards.map((c) => c.pairId)).size, [matchCards]);
+  const scorePercent = matchTotalPairs > 0 ? Math.round((score / (matchTotalPairs * 10)) * 100) : 0;
+  const scoreGrade =
+    scorePercent === 100
+      ? { label: "Excellent!", color: "text-green-600" }
+      : scorePercent >= 80
+        ? { label: "Good!", color: "text-warm-accent" }
+        : scorePercent >= 50
+          ? { label: "Add Oil!", color: "text-amber-500" }
+          : { label: "Keep Trying!", color: "text-warm-text-muted" };
+
+  // Filter cards by part
+  const filteredRawCards = useMemo(() => {
+    if (partFilter === "all") return allRawCards;
+    return allRawCards.filter(({ raw }) => {
+      const tag = (raw.partTag || "").toUpperCase();
+      if (partFilter === "A") return tag === "A" || tag === "PART A";
+      if (partFilter === "B1") return tag === "B1" || tag === "PART B1";
+      if (partFilter === "B2") return tag === "B2" || tag === "PART B2";
+      return true;
+    });
+  }, [allRawCards, partFilter]);
 
   // Load modules
   useEffect(() => {
@@ -103,7 +133,7 @@ export default function MatchPage() {
     return () => clearInterval(interval);
   }, [gameStarted, gameFinished]);
 
-  // Start game with selected module
+  // Start game with filtered cards
   const startGame = useCallback(async () => {
     if (!selectedModuleId) return;
     setLoadingCards(true);
@@ -117,32 +147,51 @@ export default function MatchPage() {
     setWrongPair(null);
 
     try {
-      const cardsRef = collection(db(), "modules", selectedModuleId, "cards");
-      const q = query(cardsRef, orderBy("order", "asc"));
-      const snap = await getDocs(q);
+      // Load all cards if not cached, otherwise use cached
+      let rawCards = allRawCards;
+      if (rawCards.length === 0 || gameFinished) {
+        const cardsRef = collection(db(), "modules", selectedModuleId, "cards");
+        const q = query(cardsRef, orderBy("order", "asc"));
+        const snap = await getDocs(q);
+        rawCards = snap.docs.map((d) => ({
+          raw: normalizeCard(docData(d)),
+          id: d.id,
+        }));
+        setAllRawCards(rawCards);
+      }
 
-      const rawCards = snap.docs.map((d) => ({
-        raw: normalizeCard(docData(d)),
-        id: d.id,
-      }));
+      // Apply part filter
+      const filtered = partFilter === "all"
+        ? rawCards
+        : rawCards.filter(({ raw }) => {
+            const tag = (raw.partTag || "").toUpperCase();
+            if (partFilter === "A") return tag === "A" || tag === "PART A";
+            if (partFilter === "B1") return tag === "B1" || tag === "PART B1";
+            if (partFilter === "B2") return tag === "B2" || tag === "PART B2";
+            return true;
+          });
 
       // Take up to 8 pairs for a manageable game
-      const selected = rawCards.slice(0, 8);
+      const selected = filtered.slice(0, 8);
 
       const pairs: MatchCard[] = [];
       for (const { raw, id } of selected) {
         const definition = raw.definitionEnc ? await decrypt(raw.definitionEnc) : "";
+        const exampleSentence = raw.exampleSentenceEnc ? await decrypt(raw.exampleSentenceEnc) : "";
+        const wordData = { word: raw.word, definition, exampleSentence };
         pairs.push({
           id: `${id}-word`,
           text: raw.word,
           pairId: id,
           type: "word",
+          wordData,
         });
         pairs.push({
           id: `${id}-def`,
           text: definition,
           pairId: id,
           type: "definition",
+          wordData,
         });
       }
 
@@ -153,7 +202,7 @@ export default function MatchPage() {
     } finally {
       setLoadingCards(false);
     }
-  }, [selectedModuleId]);
+  }, [selectedModuleId, partFilter, allRawCards, gameFinished]);
 
   // Handle card tap
   const handleCardTap = useCallback(
@@ -184,9 +233,23 @@ export default function MatchPage() {
         setScore((s) => s + 10);
         setSelectedId(null);
 
+        // Collect word
+        const wordCard = matchCards.find((c) => c.pairId === card.pairId && c.type === "word");
+        if (wordCard?.wordData && uid) {
+          addWordToCollection(
+            uid,
+            selectedModuleId,
+            card.pairId,
+            wordCard.wordData.word,
+            wordCard.wordData.definition,
+            wordCard.wordData.exampleSentence
+          ).catch(() => {});
+        }
+
         // Check if game finished
         const totalPairs = new Set(matchCards.map((c) => c.pairId)).size;
-        if (matchedPairs.size + 1 >= totalPairs) {
+        const newMatchedCount = matchedPairs.size + 1;
+        if (newMatchedCount >= totalPairs) {
           setGameFinished(true);
         }
       } else {
@@ -232,7 +295,7 @@ export default function MatchPage() {
       </div>
 
       {/* Module Selector + Start */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <Select value={selectedModuleId} onValueChange={(v) => setSelectedModuleId(v ?? "")} disabled={gameStarted && !gameFinished}>
           <SelectTrigger className="w-full border-warm-border bg-warm-surface sm:w-72">
             <SelectValue placeholder="Select a module" />
@@ -263,6 +326,20 @@ export default function MatchPage() {
           </Button>
         ) : null}
       </div>
+
+      {/* Part Filter Tabs */}
+      <Tabs
+        value={partFilter}
+        onValueChange={(v) => setPartFilter(v as PartFilter)}
+        className="mb-6"
+      >
+        <TabsList variant="line" className="bg-warm-surface-2">
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="A">Part A</TabsTrigger>
+          <TabsTrigger value="B1">Part B1</TabsTrigger>
+          <TabsTrigger value="B2">Part B2</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Score / Timer Bar */}
       {gameStarted && (
@@ -307,9 +384,21 @@ export default function MatchPage() {
             <p className="mt-1 text-sm text-warm-text-muted">
               Completed in {formatTime(timer)} with {attempts} attempts
             </p>
-            <p className="text-lg font-medium text-warm-accent">
+            <p className="mt-2 text-lg font-medium text-warm-accent">
               Final Score: {score}
             </p>
+            <motion.div
+              className="mt-2 flex items-center justify-center gap-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, ...springSnappy }}
+            >
+              <Medal className={`size-5 ${scoreGrade.color}`} />
+              <span className={`text-xl font-semibold ${scoreGrade.color}`}>
+                {scoreGrade.label}
+              </span>
+              <span className="text-sm text-warm-text-muted">({scorePercent}%)</span>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
