@@ -143,7 +143,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 async function checkIsTeacher(email: string): Promise<boolean> {
   const dbInstance = getDbInstance();
-  const q = query(collection(dbInstance, "teachers"), where("email", "==", email.toLowerCase()));
-  const snap = await getDocs(q);
-  return !snap.empty;
+  const docRef = doc(dbInstance, "config", "teachers");
+  const snap = await getDoc(docRef);
+  if (!snap.exists()) return false;
+  const data = snap.data();
+  const emails = data?.emails as string[] | undefined;
+  return emails?.includes(email.toLowerCase()) ?? false;
 }

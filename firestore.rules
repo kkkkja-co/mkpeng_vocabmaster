@@ -18,8 +18,8 @@ service cloud.firestore {
       return isAuth() && request.auth.uid == uid;
     }
 
-    // ── Teachers whitelist ──
-    match /teachers/{teacherId} {
+    // ── Config (teacher emails array) ──
+    match /config/{docId} {
       allow read: if isAuth();
       allow write: if false;
     }
