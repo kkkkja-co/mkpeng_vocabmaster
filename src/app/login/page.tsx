@@ -40,12 +40,13 @@ export default function LoginPage() {
   const router = useRouter();
   const { studentLogin, teacherLogin, uid, role } = useAuthStore();
 
-  // Fetch classes in real time
+  // Fetch classes in real time (only after Firebase is configured)
   useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) return;
     const unsub = onSnapshot(collection(db, "classes"), (snap) => {
       const items = snap.docs.map((d) => ({ id: d.id, name: d.data().name as string }));
       setClasses(items);
-    });
+    }, () => {});
     return unsub;
   }, []);
 
