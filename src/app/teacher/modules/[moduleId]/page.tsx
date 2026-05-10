@@ -64,14 +64,12 @@ import { pageTransition } from "@/lib/animations";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const SUBJECTS = ["English", "Vocabulary", "Grammar", "Science", "Math", "History"];
 const LEVELS = ["Beginner", "Intermediate", "Advanced"];
-const PARTS = ["Part 1", "Part 2", "Part 3", "Part 4"];
+const PARTS = ["Part A", "B1", "B2", "Uncategorized"];
 
 interface ModuleSettings {
   title: string;
   description: string;
-  subject: string;
   level: string;
   part: string;
   published: boolean;
@@ -107,7 +105,6 @@ export default function ModuleEditorPage({
   const [settings, setSettings] = useState<ModuleSettings>({
     title: "",
     description: "",
-    subject: "",
     level: "",
     part: "",
     published: false,
@@ -157,7 +154,6 @@ export default function ModuleEditorPage({
       setSettings({
         title: (modData.title as string) ?? "",
         description,
-        subject: (modData.subject as string) ?? "",
         level: (modData.level as string) ?? "",
         part: (modData.part as string) ?? "",
         published: (modData.published as boolean) ?? false,
@@ -246,7 +242,6 @@ export default function ModuleEditorPage({
       await updateDoc(doc(db(), "modules", moduleId), {
         title: settings.title,
         description: settings.description,
-        subject: settings.subject,
         level: settings.level,
         part: settings.part,
         assignedClasses: settings.assignedClasses,
@@ -503,27 +498,7 @@ export default function ModuleEditorPage({
                   className="border-warm-border bg-warm-bg"
                 />
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-2">
-                  <Label className="text-warm-text">Subject</Label>
-                  <Select
-                    value={settings.subject}
-                    onValueChange={(v) =>
-                      setSettings((s) => ({ ...s, subject: v ?? "" }))
-                    }
-                  >
-                    <SelectTrigger className="border-warm-border bg-warm-bg">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SUBJECTS.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label className="text-warm-text">Level</Label>
                   <Select

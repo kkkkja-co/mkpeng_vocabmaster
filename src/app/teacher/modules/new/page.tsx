@@ -31,16 +31,14 @@ import { Label } from "@/components/ui/label";
 import { pageTransition } from "@/lib/animations";
 import { toast } from "sonner";
 
-const SUBJECTS = ["English", "Vocabulary", "Grammar", "Science", "Math", "History"];
 const LEVELS = ["Beginner", "Intermediate", "Advanced"];
-const PARTS = ["Part 1", "Part 2", "Part 3", "Part 4"];
+const PARTS = ["Part A", "B1", "B2", "Uncategorized"];
 
 export default function NewModulePage() {
   const { uid } = useAuthStore();
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [subject, setSubject] = useState("");
   const [level, setLevel] = useState("");
   const [part, setPart] = useState("");
   const [saving, setSaving] = useState(false);
@@ -52,7 +50,6 @@ export default function NewModulePage() {
       const modRef = await addDoc(collection(db(), "modules"), {
         title: title.trim(),
         description: description.trim(),
-        subject,
         level,
         part,
         published: false,
@@ -151,13 +148,6 @@ export default function NewModulePage() {
               className="border-warm-border bg-warm-bg"
             />
           </div>
-
-          <SelectChips
-            label="Subject"
-            options={SUBJECTS}
-            value={subject}
-            onChange={setSubject}
-          />
 
           <SelectChips
             label="Level"

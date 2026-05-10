@@ -54,7 +54,6 @@ interface ModuleItem {
   id: string;
   title: string;
   description: string;
-  subject: string;
   level: string;
   part: string;
   published: boolean;
@@ -128,7 +127,6 @@ export default function ModulesPage() {
       const newModRef = await addDoc(collection(db(), "modules"), {
         title: `${mod.title} (Copy)`,
         description: mod.description,
-        subject: mod.subject,
         level: mod.level,
         part: mod.part,
         published: false,
@@ -282,11 +280,6 @@ export default function ModulesPage() {
                 <CardContent className="flex flex-1 flex-col justify-between pt-0">
                   <div className="mb-4 space-y-2">
                     <div className="flex flex-wrap gap-2">
-                      {mod.subject && (
-                        <Badge variant="outline" className="border-warm-border text-xs text-warm-text-muted">
-                          {mod.subject}
-                        </Badge>
-                      )}
                       {mod.level && (
                         <Badge variant="outline" className="border-warm-border text-xs text-warm-text-muted">
                           {mod.level}
