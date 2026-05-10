@@ -101,7 +101,7 @@ export default function ClassesPage() {
     if (!uid || !newClassName.trim()) return;
     setSaving(true);
     try {
-      await addDoc(collection(db(), "classes"), {
+      const classRef = await addDoc(collection(db(), "classes"), {
         name: newClassName.trim(),
         teacherId: uid,
         studentUids: [],
@@ -111,7 +111,19 @@ export default function ClassesPage() {
       toast.success("Class created successfully");
       setShowNewDialog(false);
       setNewClassName("");
-      setLoading(true);
+      // Optimistically add the new class to the state
+      setClasses((prev) => [
+        {
+          id: classRef.id,
+          name: newClassName.trim(),
+          teacherId: uid,
+          studentUids: [],
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        },
+        ...prev,
+      ]);
+      // Also fetch to ensure we have the latest data
       await fetchClasses();
     } catch (err) {
       toast.error("Failed to create class");
@@ -133,6 +145,14 @@ export default function ClassesPage() {
       setShowRenameDialog(false);
       setRenameValue("");
       setSelectedClass(null);
+      // Optimistically update the state
+      setClasses((prev) =>
+        prev.map((cls) =>
+          cls.id === selectedClass.id
+            ? { ...cls, name: renameValue.trim() }
+            : cls
+        )
+      );
       await fetchClasses();
     } catch (err) {
       toast.error("Failed to rename class");
@@ -149,6 +169,8 @@ export default function ClassesPage() {
       await deleteDoc(doc(db(), "classes", selectedClass.id));
       toast.success("Class deleted");
       setShowDeleteDialog(false);
+      // Optimistically remove from state
+      setClasses((prev) => prev.filter((cls) => cls.id !== selectedClass.id));
       setSelectedClass(null);
       await fetchClasses();
     } catch (err) {
