@@ -14,11 +14,13 @@ import { BookOpen, Loader2, Mail } from "lucide-react";
 import { pageTransition } from "@/lib/animations";
 
 export default function LoginPage() {
-  useAuthInit();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Initialize auth listener here (once at login) so subsequent page loads are instant
+  useAuthInit();
 
   const router = useRouter();
   const { signInWithGoogle, signInWithEmail, uid, role, className, classNum } = useAuthStore();

@@ -111,7 +111,6 @@ export default function ClassesPage() {
       toast.success("Class created successfully");
       setShowNewDialog(false);
       setNewClassName("");
-      // Optimistically add the new class to the state
       setClasses((prev) => [
         {
           id: classRef.id,
@@ -123,8 +122,6 @@ export default function ClassesPage() {
         },
         ...prev,
       ]);
-      // Also fetch to ensure we have the latest data
-      await fetchClasses();
     } catch (err) {
       toast.error("Failed to create class");
       console.error(err);
@@ -145,7 +142,6 @@ export default function ClassesPage() {
       setShowRenameDialog(false);
       setRenameValue("");
       setSelectedClass(null);
-      // Optimistically update the state
       setClasses((prev) =>
         prev.map((cls) =>
           cls.id === selectedClass.id
@@ -153,7 +149,6 @@ export default function ClassesPage() {
             : cls
         )
       );
-      await fetchClasses();
     } catch (err) {
       toast.error("Failed to rename class");
       console.error(err);
@@ -169,10 +164,8 @@ export default function ClassesPage() {
       await deleteDoc(doc(db(), "classes", selectedClass.id));
       toast.success("Class deleted");
       setShowDeleteDialog(false);
-      // Optimistically remove from state
       setClasses((prev) => prev.filter((cls) => cls.id !== selectedClass.id));
       setSelectedClass(null);
-      await fetchClasses();
     } catch (err) {
       toast.error("Failed to delete class");
       console.error(err);

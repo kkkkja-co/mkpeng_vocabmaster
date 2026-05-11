@@ -16,6 +16,9 @@ import { encrypt, decrypt } from "@/lib/crypto";
 
 const ALLOWED_DOMAINS = ["makopan.edu.hk", "bunorden.com"];
 
+// Guards against multiple simultaneous listener registrations
+let _authInitialized = false;
+
 function isAllowedEmail(email: string): boolean {
   const domain = email.split("@")[1]?.toLowerCase();
   return ALLOWED_DOMAINS.includes(domain);
@@ -46,12 +49,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   uid: null,
   role: null,
   userDoc: null,
-  loading: true,
+  loading: false,
   name: undefined,
   className: undefined,
   classNum: undefined,
 
   init: () => {
+    if (_authInitialized) {
+      // Listener already attached — uid/role already reflect current state
+      return () => {};
+    }
+    _authInitialized = true;
     const unsub = onAuthStateChanged(getAuthInstance(), async (firebaseUser) => {
       if (!firebaseUser) {
         set({ uid: null, role: null, userDoc: null, loading: false });
@@ -73,9 +81,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (snap.exists()) {
         const data = normalizeUser(snap.data() as Record<string, unknown>);
         if (data.role === "student") {
-          const name = await decrypt(data.nameEnc);
-          const className = await decrypt(data.classEnc);
-          const classNum = await decrypt(data.classNumEnc);
+          // Run all three decrypts in parallel to minimize auth initialization time
+          const [name, className, classNum] = await Promise.all([
+            decrypt(data.nameEnc),
+            decrypt(data.classEnc),
+            decrypt(data.classNumEnc),
+          ]);
           set({ uid, role: data.role, userDoc: data, loading: false, name, className, classNum });
         } else {
           set({ uid, role: data.role, userDoc: data, loading: false, name: email.split("@")[0] });

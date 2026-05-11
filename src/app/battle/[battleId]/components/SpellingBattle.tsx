@@ -63,6 +63,7 @@ export function SpellingBattle({
   const hasAdvancedRef = useRef(false);
 
   const currentCard = cards[currentIndex];
+  const gameStarted = loading === false && !gameFinished;
 
   // Load cards
   useEffect(() => {
@@ -204,7 +205,6 @@ export function SpellingBattle({
     window.speechSynthesis.speak(utterance);
   };
 
-  const gameStarted = loading === false && !gameFinished;
   const timerPercent = (timeLeft / GAME_DURATION) * 100;
   const timerColor =
     timerPercent > 50
