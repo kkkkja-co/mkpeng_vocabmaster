@@ -33,6 +33,14 @@ export function Footer() {
             >
               Terms of Use
             </Link>
+            <Link
+              href="https://status.bunorden.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-warm-text-muted"
+            >
+              System Status
+            </Link>
           </div>
           <p className="text-xs text-warm-text-subtle">
             &copy; {new Date().getFullYear()} VocabMaster. All rights reserved.
