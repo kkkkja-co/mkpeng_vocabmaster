@@ -56,7 +56,6 @@ export async function getClassesByTeacher(teacherId: string) {
   const { getDocs } = await import("firebase/firestore");
   const q = query(
     collection(db(), CLASSES),
-    where("teacherId", "==", teacherId),
     orderBy("createdAt", "desc")
   );
   const snap = await getDocs(q);
@@ -85,7 +84,6 @@ export async function getModulesByTeacher(teacherId: string): Promise<(ModuleDoc
   const { getDocs } = await import("firebase/firestore");
   const q = query(
     collection(db(), MODULES),
-    where("createdBy", "==", teacherId),
     orderBy("updatedAt", "desc")
   );
   const snap = await getDocs(q);

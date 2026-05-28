@@ -12,8 +12,7 @@ import {
   AlertTriangle,
   Crown,
   Clock,
-  ArrowUpRight,
-  ArrowDownRight,
+  GraduationCap,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { db } from "@/lib/firebase";
@@ -67,6 +66,13 @@ interface StrugglingStudent {
   reason: string;
 }
 
+interface ClassOverview {
+  id: string;
+  name: string;
+  studentCount: number;
+  createdAt: Timestamp;
+}
+
 function SkeletonCard() {
   return (
     <div className="animate-pulse rounded-xl border border-warm-border bg-warm-surface p-4">
@@ -88,6 +94,7 @@ export default function TeacherDashboardPage() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [topPerformers, setTopPerformers] = useState<TopPerformer[]>([]);
   const [struggling, setStruggling] = useState<StrugglingStudent[]>([]);
+  const [classList, setClassList] = useState<ClassOverview[]>([]);
 
   useEffect(() => {
     if (!uid) return;
@@ -114,10 +121,9 @@ export default function TeacherDashboardPage() {
           }
         });
 
-        // Fetch modules by teacher
+        // Fetch all modules
         const modulesQ = query(
-          collection(db(), "modules"),
-          where("createdBy", "==", uid)
+          collection(db(), "modules")
         );
         const modulesSnap = await getDocs(modulesQ);
         const publishedModules = modulesSnap.docs.filter(
@@ -143,6 +149,25 @@ export default function TeacherDashboardPage() {
         const avgScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0;
 
         // Build KPI cards
+        // Fetch classes overview
+        try {
+          const classesSnap = await getDocs(
+            query(collection(db(), "classes"), orderBy("createdAt", "desc"))
+          );
+          const classesList: ClassOverview[] = classesSnap.docs.map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              name: (data.name as string) ?? d.id,
+              studentCount: (data.studentUids as string[])?.length ?? 0,
+              createdAt: data.createdAt as Timestamp,
+            };
+          });
+          setClassList(classesList);
+        } catch {
+          // Classes might not exist yet
+        }
+
         setKpis([
           {
             label: "Total Students",
@@ -355,6 +380,36 @@ export default function TeacherDashboardPage() {
               );
             })}
       </motion.div>
+
+      {/* Classes Overview */}
+      {!loading && classList.length > 0 && (
+        <motion.div {...pageTransition} className="space-y-4">
+          <div className="flex items-center gap-2">
+            <GraduationCap className="size-5 text-warm-accent" />
+            <h2 className="font-[family-name:var(--font-serif)] text-xl font-normal text-warm-text">
+              Classes
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {classList.map((cls) => (
+              <Card
+                key={cls.id}
+                className="border-warm-border bg-warm-surface transition-all hover:shadow-md"
+              >
+                <CardContent className="p-4">
+                  <p className="truncate font-medium text-warm-text">{cls.name}</p>
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-warm-text-muted">
+                    <Users className="size-3.5" />
+                    <span>
+                      {cls.studentCount} student{cls.studentCount !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Two column layout */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

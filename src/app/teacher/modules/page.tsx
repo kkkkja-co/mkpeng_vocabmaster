@@ -22,7 +22,6 @@ import { db } from "@/lib/firebase";
 import {
   collection,
   query,
-  where,
   getDocs,
   updateDoc,
   deleteDoc,
@@ -82,8 +81,7 @@ export default function ModulesPage() {
     if (!uid) return;
     try {
       const q = query(
-        collection(db(), "modules"),
-        where("createdBy", "==", uid)
+        collection(db(), "modules")
       );
       const snap = await getDocs(q);
       const items = snap.docs.map((d) => ({

@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useAuthStore } from "@/lib/auth-store";
 import { useAuthInit } from "@/hooks/use-auth-init";
 import { getAllClasses } from "@/lib/firestore-helpers";
+import { decrypt } from "@/lib/crypto";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -54,7 +55,22 @@ export default function SelectClassPage() {
     async function fetchClasses() {
       try {
         const allClasses = await getAllClasses();
-        setClasses(allClasses.map((c) => ({ id: c.id, name: (c as Record<string, unknown>).name as string })));
+        const resolved = await Promise.all(
+          allClasses.map(async (c) => {
+            const raw = c as Record<string, unknown>;
+            let name = raw.name as string | undefined;
+            // Attempt decryption if the name appears to be in encrypted format.
+            if (name && name.includes(".")) {
+              try {
+                name = await decrypt(name);
+              } catch {
+                // Not encrypted — keep as-is
+              }
+            }
+            return { id: c.id, name: name || c.id };
+          })
+        );
+        setClasses(resolved);
       } catch {
         setError("Failed to load classes. Please try again.");
       } finally {

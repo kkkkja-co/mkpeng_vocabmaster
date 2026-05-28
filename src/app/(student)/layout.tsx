@@ -7,13 +7,14 @@ import { motion } from "framer-motion";
 import { useAuthStore } from "@/lib/auth-store";
 import { useAuthInit } from "@/hooks/use-auth-init";
 import { Button } from "@/components/ui/button";
-import { Loader2, LogOut, Layers, Swords, SpellCheck, BookOpen, User } from "lucide-react";
+import { Loader2, LogOut, Layers, Swords, SpellCheck, BookOpen, User, Zap } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/cards", label: "Cards", icon: Layers },
   { href: "/match", label: "Match", icon: Swords },
   { href: "/spell", label: "Spell", icon: SpellCheck },
   { href: "/reading", label: "Reading", icon: BookOpen },
+  { href: "/battle", label: "Battle", icon: Zap },
   { href: "/profile", label: "Profile", icon: User },
 ] as const;
 

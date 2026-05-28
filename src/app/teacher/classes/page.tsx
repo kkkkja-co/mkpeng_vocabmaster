@@ -24,7 +24,6 @@ import {
   doc,
   getDocs,
   query,
-  where,
   orderBy,
   serverTimestamp,
   Timestamp,
@@ -81,7 +80,6 @@ export default function ClassesPage() {
     try {
       const q = query(
         collection(db(), "classes"),
-        where("teacherId", "==", uid),
         orderBy("createdAt", "desc")
       );
       const snap = await getDocs(q);

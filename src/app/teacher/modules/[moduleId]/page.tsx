@@ -29,7 +29,6 @@ import {
   deleteDoc,
   getDocs,
   query,
-  where,
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
@@ -130,6 +129,21 @@ export default function ModuleEditorPage({
   const [audioUploading, setAudioUploading] = useState(false);
   const [previewCard, setPreviewCard] = useState<CardItem | null>(null);
 
+  // Bulk import state
+  const [showBulkDialog, setShowBulkDialog] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [bulkParseResult, setBulkParseResult] = useState<{
+    parsed: Array<{
+      word: string;
+      definition: string;
+      chineseMeaning: string;
+      exampleSentence: string;
+      partTag: string;
+    }>;
+    errors: string[];
+  }>({ parsed: [], errors: [] });
+
   const fetchModule = useCallback(async () => {
     try {
       const modSnap = await getDoc(doc(db(), "modules", moduleId));
@@ -214,11 +228,10 @@ export default function ModuleEditorPage({
 
   // Fetch classes
   const fetchClasses = useCallback(async () => {
-    if (!uid) return;
     try {
       const q = query(
         collection(db(), "classes"),
-        where("teacherId", "==", uid)
+        orderBy("createdAt", "desc")
       );
       const snap = await getDocs(q);
       const items = snap.docs.map((d) => ({
@@ -371,6 +384,84 @@ export default function ModuleEditorPage({
     } catch (err) {
       toast.error("Failed to delete card");
       console.error(err);
+    }
+  }
+
+  function parseBulkText(text: string) {
+    const lines = text.split(/\r?\n/).filter((l) => l.trim());
+    const parsed: typeof bulkParseResult.parsed = [];
+    const errors: string[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      // Detect separator: tab or pipe
+      const sep = line.includes("\t") ? "\t" : line.includes("|") ? "|" : null;
+      if (!sep) {
+        errors.push(`Line ${i + 1}: Could not detect separator. Use tabs or pipes (|) between fields.`);
+        continue;
+      }
+      const parts = line.split(sep).map((s) => s.trim());
+      if (parts.length < 2 || !parts[0]) {
+        errors.push(`Line ${i + 1}: Missing word or definition.`);
+        continue;
+      }
+      parsed.push({
+        word: parts[0],
+        definition: parts[1] ?? "",
+        chineseMeaning: parts[2] ?? "",
+        exampleSentence: parts[3] ?? "",
+        partTag: parts[4] ?? "",
+      });
+    }
+    return { parsed, errors };
+  }
+
+  async function handleBulkImport() {
+    if (!bulkText.trim()) {
+      toast.error("Paste vocabulary data first.");
+      return;
+    }
+    const { parsed, errors } = parseBulkText(bulkText);
+    setBulkParseResult({ parsed, errors });
+
+    if (parsed.length === 0) {
+      toast.error("No valid entries found.");
+      return;
+    }
+
+    setBulkImporting(true);
+    let imported = 0;
+    try {
+      for (const entry of parsed) {
+        const definitionEnc = await encrypt(entry.definition);
+        const chineseMeaningEnc = await encrypt(entry.chineseMeaning);
+        const exampleSentenceEnc = await encrypt(entry.exampleSentence);
+        await addDoc(collection(db(), "modules", moduleId, "cards"), {
+          word: entry.word,
+          definitionEnc,
+          chineseMeaningEnc,
+          exampleSentenceEnc,
+          partTag: entry.partTag,
+          order: cards.length + imported,
+          audioUrl: null,
+          createdAt: serverTimestamp(),
+        });
+        imported++;
+      }
+      await updateDoc(doc(db(), "modules", moduleId), {
+        totalCards: cards.length + imported,
+        updatedAt: serverTimestamp(),
+      });
+      toast.success(`Imported ${imported} card${imported !== 1 ? "s" : ""}`);
+      setShowBulkDialog(false);
+      setBulkText("");
+      setBulkParseResult({ parsed: [], errors: [] });
+      await fetchModule();
+    } catch (err) {
+      toast.error(`Failed after importing ${imported} cards`);
+      console.error(err);
+    } finally {
+      setBulkImporting(false);
     }
   }
 
@@ -599,14 +690,29 @@ export default function ModuleEditorPage({
               <CardTitle className="text-warm-text">
                 Cards ({cards.length})
               </CardTitle>
-              <Button
-                size="sm"
-                onClick={openNewCard}
-                className="bg-warm-accent text-white hover:bg-warm-accent-dark"
-              >
-                <Plus className="mr-1 size-3" />
-                Add Card
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setBulkText("");
+                    setBulkParseResult({ parsed: [], errors: [] });
+                    setShowBulkDialog(true);
+                  }}
+                  className="border-warm-border text-warm-text"
+                >
+                  <Upload className="mr-1 size-3" />
+                  Bulk Import
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={openNewCard}
+                  className="bg-warm-accent text-white hover:bg-warm-accent-dark"
+                >
+                  <Plus className="mr-1 size-3" />
+                  Add Card
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {cards.length === 0 ? (
@@ -717,7 +823,7 @@ export default function ModuleEditorPage({
                 onChange={(e) =>
                   setCardForm((f) => ({ ...f, chineseMeaning: e.target.value }))
                 }
-                placeholder="无处不在的"
+                placeholder="無處不在的"
                 className="border-warm-border bg-warm-bg"
               />
             </div>
@@ -800,6 +906,83 @@ export default function ModuleEditorPage({
                 <Check className="mr-2 size-4" />
               )}
               {editingCard ? "Update" : "Add"} Card
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Import Dialog */}
+      <Dialog open={showBulkDialog} onOpenChange={setShowBulkDialog}>
+        <DialogContent className="border-warm-border bg-warm-surface sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-warm-text">Bulk Import Cards</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-warm-text-muted">
+              Paste vocabulary entries, one per line. Use <strong>tabs</strong> or{" "}
+              <strong>pipes (|)</strong> to separate fields.
+            </p>
+            <div className="rounded-lg border border-warm-border bg-warm-bg p-3">
+              <p className="text-xs font-medium text-warm-text-muted">Format:</p>
+              <code className="mt-1 block text-xs text-warm-text-subtle">
+                word | definition | chinese_meaning | example_sentence | part_of_speech
+              </code>
+            </div>
+            <textarea
+              value={bulkText}
+              onChange={(e) => {
+                setBulkText(e.target.value);
+                if (e.target.value.trim()) {
+                  const { parsed, errors } = parseBulkText(e.target.value);
+                  setBulkParseResult({ parsed, errors });
+                } else {
+                  setBulkParseResult({ parsed: [], errors: [] });
+                }
+              }}
+              placeholder={`apple\t一種水果\t蘋果\tAn apple a day keeps the doctor away.\tn.
+book\t用於閱讀的物品\t書\tShe is reading a book.\tn.`}
+              rows={10}
+              className="w-full rounded-lg border border-warm-border bg-warm-bg p-3 font-[family-name:var(--font-mono)] text-sm text-warm-text placeholder:text-warm-text-subtle focus:border-warm-accent focus:outline-none"
+            />
+            {bulkParseResult.parsed.length > 0 && (
+              <p className="text-sm text-warm-text-muted">
+                Detected <strong>{bulkParseResult.parsed.length}</strong> entr
+                {bulkParseResult.parsed.length !== 1 ? "ies" : "y"}
+              </p>
+            )}
+            {bulkParseResult.errors.length > 0 && (
+              <div className="rounded-lg border border-warm-wrong/30 bg-warm-wrong/5 p-3">
+                {bulkParseResult.errors.map((err, i) => (
+                  <p key={i} className="text-xs text-warm-wrong">
+                    {err}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowBulkDialog(false);
+                setBulkText("");
+                setBulkParseResult({ parsed: [], errors: [] });
+              }}
+              className="border-warm-border text-warm-text"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBulkImport}
+              disabled={!bulkText.trim() || bulkParseResult.parsed.length === 0 || bulkImporting}
+              className="bg-warm-accent text-white hover:bg-warm-accent-dark"
+            >
+              {bulkImporting ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Upload className="mr-2 size-4" />
+              )}
+              Import {bulkParseResult.parsed.length > 0 ? `(${bulkParseResult.parsed.length})` : ""}
             </Button>
           </DialogFooter>
         </DialogContent>
